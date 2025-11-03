@@ -5,15 +5,15 @@ class HeatMapCreator:
     """
     由ROS2发布的/map话题数据生成热力图
     """
-    def __init__(self, heat_map_interval: float):
+    def __init__(self, heat_map_interval: int):
         self.raw_grid_map_width_pixel = 0           # 原始地图的宽度 [pixel]
         self.raw_grid_map_height_pixel = 0          # 原始地图的高度 [pixel]
         self.raw_grid_map_width = 0                 # 原始地图的宽度 [m]
         self.raw_grid_map_height = 0                # 原始地图的高度 [m]
         self.raw_grid_map_resolution = 0            # 原始地图的分辨率 [m/pixel]
         self.raw_grid_map_data = []                 # 原始地图的数据
-        self.raw_grid_map_origin_x = 0.0            # 原始地图原点x轴坐标 [pixel]
-        self.raw_grid_map_origin_y = 0.0            # 原始地图原点y轴坐标 [pixel]
+        self.raw_grid_map_origin_x = 0            # 原始地图原点x轴坐标 [pixel]
+        self.raw_grid_map_origin_y = 0            # 原始地图原点y轴坐标 [pixel]
 
         self.raw_grid_map_data_2d = []              # 原始地图的2D数据
 
@@ -68,11 +68,67 @@ class HeatMapCreator:
         print(f'原始地图2D数据:\n{self.raw_grid_map_data_2d}')
 
         # 绝对值原点坐标
-        true_origin_point = (abs(self.raw_grid_map_origin_x), self.raw_grid_map_height_pixel - abs(self.raw_grid_map_origin_y))
-        explore_origin_points = []
+        true_origin_point = [
+            abs(self.raw_grid_map_origin_x),
+            self.raw_grid_map_height_pixel - 1 - abs(self.raw_grid_map_origin_y),
+        ]
+        # debug: 绝对值原点坐标
+        print(f'绝对值原点坐标:\n{true_origin_point}')
+
+        self.raw_grid_map_data_2d[1][true_origin_point[1]][true_origin_point[0]] = 1
+
+        print(f'原始地图2D数据:\n{self.raw_grid_map_data_2d}')
+
+        explore_origin_points = [true_origin_point]
         explore_results = []
 
-        print(true_origin_point)
+        while len(explore_origin_points) != 0:
+            for i in explore_origin_points:
+                # 上
+                if (
+                    0
+                    <= i[1] - self.heat_map_interval
+                    <= self.raw_grid_map_height_pixel - 1
+                    and self.raw_grid_map_data_2d[1][i[1] - self.heat_map_interval][i[0]] != 1
+                ):
+                    explore_results.append([i[0], i[1] - self.heat_map_interval])
+                    self.raw_grid_map_data_2d[1][i[1] - self.heat_map_interval][i[0]] = 1
+
+                # 下
+                if (
+                    0
+                    <= i[1] + self.heat_map_interval
+                    <= self.raw_grid_map_height_pixel - 1
+                    and self.raw_grid_map_data_2d[1][i[1] + self.heat_map_interval][i[0]] != 1
+                ):
+                    explore_results.append([i[0], i[1] + self.heat_map_interval])
+                    self.raw_grid_map_data_2d[1][i[1] + self.heat_map_interval][i[0]] = 1
+
+                # 左
+                if (
+                    0
+                    <= i[0] - self.heat_map_interval
+                    <= self.raw_grid_map_width_pixel - 1
+                    and self.raw_grid_map_data_2d[1][i[1]][i[0] - self.heat_map_interval] != 1
+                ):
+                    explore_results.append([i[0] - self.heat_map_interval, i[1]])
+                    self.raw_grid_map_data_2d[1][i[1]][i[0] - self.heat_map_interval] = 1
+
+                # 右
+                if (
+                    0
+                    <= i[0] + self.heat_map_interval
+                    <= self.raw_grid_map_width_pixel - 1
+                    and self.raw_grid_map_data_2d[1][i[1]][
+                        i[0] + self.heat_map_interval
+                    ] != 1
+                ):
+                    explore_results.append([i[0] + self.heat_map_interval, i[1]])
+                    self.raw_grid_map_data_2d[1][i[1]][i[0] + self.heat_map_interval] = 1
+
+            explore_origin_points = explore_results
+            explore_results = []
+
 
 
 

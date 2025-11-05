@@ -30,13 +30,19 @@ if __name__ == '__main__':
                  0.05,
                  -4.9306352995215565,
                  -9.219248261101354)
-    mapping = {
-        -1: (128, 128, 128),  # 比如 “未知” 用灰色
-        0: (255, 255, 255),  # “空闲” 用白色
-        1: (0, 0, 255),  # “障碍” 用蓝色
-        2: (255, 0, 0)  # “特别标记” 红色
+    mapping_0 = {
+        -1: (128, 128, 128),  # 未知 灰
+        0: (255, 255, 255),   # 空闲 白
+        1: (0, 0, 255),       # 实际可用测量点 蓝
+        100: (255, 0, 0)      # 障碍物 红
     }
 
-    img = array_to_color_image(Hpc.raw_grid_map_data_2d[1], mapping, default_color=(0, 255, 0))
-    # img.save('map_colored.png')
-    img.show()
+    mapping_1 = {
+        -1: (128, 128, 128),  # 未知 灰
+        1: (0, 0, 255),       # 测量点 蓝
+    }
+
+    img_0 = array_to_color_image(Hpc.raw_grid_map_data_2d[0], mapping_0, default_color=(0, 255, 0))
+    img_1 = array_to_color_image(Hpc.raw_grid_map_data_2d[1], mapping_1, default_color=(0, 255, 0))
+    img_0.show()
+    img_1.show()

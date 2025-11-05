@@ -28,7 +28,7 @@ class HeatMapCreator:
         self.heat_map_interval_pixel = 0            # 热力图的测量间隔 [pixel]
         self.heat_map_data_2d = []                  # 热力图的2D数据
 
-        self.counter = 0                            # 获取原始数据的计数器
+        self.available_measurement_points = []      # 实际可用测量点坐标
 
     def callback(
         self,
@@ -80,7 +80,7 @@ class HeatMapCreator:
             self.raw_grid_map_height_pixel - 1 - abs(self.raw_grid_map_origin_y_pixel),
         ]
         # debug: 绝对值原点坐标
-        print(f'绝对值原点坐标:\n{true_origin_point}')
+        print(f'绝对值原点坐标: {true_origin_point}')
 
         self.raw_grid_map_data_2d[1][true_origin_point[1]][true_origin_point[0]] = 1
 
@@ -98,6 +98,9 @@ class HeatMapCreator:
                 ):
                     explore_results.append([i[0], i[1] - self.heat_map_interval_pixel])
                     self.raw_grid_map_data_2d[1][i[1] - self.heat_map_interval_pixel][i[0]] = 1
+                    if self.raw_grid_map_data_2d[0][i[1] - self.heat_map_interval_pixel][i[0]] == 0:
+                        self.available_measurement_points.append([i[0], i[1] - self.heat_map_interval_pixel])
+                        self.raw_grid_map_data_2d[0][i[1] - self.heat_map_interval_pixel][i[0]] = 1
 
                 # 下
                 if (
@@ -108,6 +111,9 @@ class HeatMapCreator:
                 ):
                     explore_results.append([i[0], i[1] + self.heat_map_interval_pixel])
                     self.raw_grid_map_data_2d[1][i[1] + self.heat_map_interval_pixel][i[0]] = 1
+                    if self.raw_grid_map_data_2d[0][i[1] + self.heat_map_interval_pixel][i[0]] == 0:
+                        self.available_measurement_points.append([i[0], i[1] + self.heat_map_interval_pixel])
+                        self.raw_grid_map_data_2d[0][i[1] + self.heat_map_interval_pixel][i[0]] = 1
 
                 # 左
                 if (
@@ -118,6 +124,9 @@ class HeatMapCreator:
                 ):
                     explore_results.append([i[0] - self.heat_map_interval_pixel, i[1]])
                     self.raw_grid_map_data_2d[1][i[1]][i[0] - self.heat_map_interval_pixel] = 1
+                    if self.raw_grid_map_data_2d[0][i[1]][i[0] - self.heat_map_interval_pixel] == 0:
+                        self.available_measurement_points.append([i[0] - self.heat_map_interval_pixel, i[1]])
+                        self.raw_grid_map_data_2d[0][i[1]][i[0] - self.heat_map_interval_pixel] = 1
 
                 # 右
                 if (
@@ -130,11 +139,14 @@ class HeatMapCreator:
                 ):
                     explore_results.append([i[0] + self.heat_map_interval_pixel, i[1]])
                     self.raw_grid_map_data_2d[1][i[1]][i[0] + self.heat_map_interval_pixel] = 1
+                    if self.raw_grid_map_data_2d[0][i[1]][i[0] + self.heat_map_interval_pixel] == 0:
+                        self.available_measurement_points.append([i[0] + self.heat_map_interval_pixel, i[1]])
+                        self.raw_grid_map_data_2d[0][i[1]][i[0] + self.heat_map_interval_pixel] = 1
 
             explore_origin_points = explore_results
             explore_results = []
-            print(len(explore_origin_points))
-        print(f'原始地图2D数据:\n{self.raw_grid_map_data_2d}')
+        print(self.available_measurement_points)
+
 
 
 

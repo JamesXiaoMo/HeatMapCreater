@@ -45,4 +45,4 @@ if __name__ == '__main__':
     img_0 = array_to_color_image(Hpc.raw_grid_map_data_2d[0], mapping_0, default_color=(0, 255, 0))
     img_1 = array_to_color_image(Hpc.raw_grid_map_data_2d[1], mapping_1, default_color=(0, 255, 0))
     img_0.show()
-    img_1.show()
+    # img_1.show()

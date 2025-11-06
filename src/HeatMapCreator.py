@@ -104,17 +104,21 @@ class HeatMapCreator:
                 ):
                     explore_results.append([i[0], i[1] - self.heat_map_interval_pixel])
                     self.raw_grid_map_data_2d[1][i[1] - self.heat_map_interval_pixel][i[0]] = 1
-                    is_point_available = False
-                    if self.raw_grid_map_data_2d[0][i[1] - self.heat_map_interval_pixel][i[0]] == 0:
-                        is_point_available = True
+                    is_point_available = True
+                    if not self.raw_grid_map_data_2d[0][i[1] - self.heat_map_interval_pixel][i[0]] == 0:
+                        is_point_available = False
                         for y in range(self.robot_radius_pixel * 2):
                             for x in range(self.robot_radius_pixel * 2):
                                 if ((-self.robot_radius_pixel + x) ** 2 + (
                                         -self.robot_radius_pixel + y) ** 2) ** 0.5 <= self.robot_radius_pixel:
                                     if self.raw_grid_map_data_2d[0][i[1] - self.heat_map_interval_pixel - self.robot_radius_pixel + y][i[0] - self.robot_radius_pixel + x] == 100:
                                         is_point_available = False
+                            if is_point_available:
+                                for j in self.available_measurement_points:
+                                    if j[0] - 10 <= int(i[0] - true_origin_point[0]) <= j[0] + 10 and j[1] - 10 <= int(i[1] - self.heat_map_interval_pixel - true_origin_point[1]) <= j[1] + 10:
+                                        is_point_available = False
                     if is_point_available:
-                        self.available_measurement_points.append([i[0], i[1] - self.heat_map_interval_pixel])
+                        self.available_measurement_points.append([int(i[0] - true_origin_point[0]), int(i[1] - self.heat_map_interval_pixel - true_origin_point[1])])
                         self.raw_grid_map_data_2d[0][i[1] - self.heat_map_interval_pixel][i[0]] = 1
 
                 # 下
@@ -126,17 +130,22 @@ class HeatMapCreator:
                 ):
                     explore_results.append([i[0], i[1] + self.heat_map_interval_pixel])
                     self.raw_grid_map_data_2d[1][i[1] + self.heat_map_interval_pixel][i[0]] = 1
-                    is_point_available = False
-                    if self.raw_grid_map_data_2d[0][i[1] + self.heat_map_interval_pixel][i[0]] == 0:
-                        is_point_available = True
+                    is_point_available = True
+                    if not self.raw_grid_map_data_2d[0][i[1] + self.heat_map_interval_pixel][i[0]] == 0:
+                        is_point_available = False
+                    else:
                         for y in range(self.robot_radius_pixel * 2):
                             for x in range(self.robot_radius_pixel * 2):
                                 if ((-self.robot_radius_pixel + x) ** 2 + (
                                         -self.robot_radius_pixel + y) ** 2) ** 0.5 <= self.robot_radius_pixel:
                                     if self.raw_grid_map_data_2d[0][i[1] + self.heat_map_interval_pixel - self.robot_radius_pixel + y][i[0] - self.robot_radius_pixel + x] == 100:
                                         is_point_available = False
+                        if is_point_available:
+                            for j in self.available_measurement_points:
+                                if j[0] - 10 <= int(i[0] - true_origin_point[0]) <= j[0] + 10 and j[1] - 10 <= int(i[1] + self.heat_map_interval_pixel - true_origin_point[1]) <= j[1] + 10:
+                                    is_point_available = False
                     if is_point_available:
-                        self.available_measurement_points.append([i[0], i[1] + self.heat_map_interval_pixel])
+                        self.available_measurement_points.append([int(i[0] - true_origin_point[0]), int(i[1] + self.heat_map_interval_pixel - true_origin_point[1])])
                         self.raw_grid_map_data_2d[0][i[1] + self.heat_map_interval_pixel][i[0]] = 1
 
                 # 左
@@ -148,17 +157,22 @@ class HeatMapCreator:
                 ):
                     explore_results.append([i[0] - self.heat_map_interval_pixel, i[1]])
                     self.raw_grid_map_data_2d[1][i[1]][i[0] - self.heat_map_interval_pixel] = 1
-                    is_point_available = False
-                    if self.raw_grid_map_data_2d[0][i[1]][i[0] - self.heat_map_interval_pixel] == 0:
-                        is_point_available = True
+                    is_point_available = True
+                    if not self.raw_grid_map_data_2d[0][i[1]][i[0] - self.heat_map_interval_pixel] == 0:
+                        is_point_available = False
+                    else:
                         for y in range(self.robot_radius_pixel * 2):
                             for x in range(self.robot_radius_pixel * 2):
                                 if ((-self.robot_radius_pixel + x) ** 2 + (
                                         -self.robot_radius_pixel + y) ** 2) ** 0.5 <= self.robot_radius_pixel:
                                     if self.raw_grid_map_data_2d[0][i[1] - self.robot_radius_pixel + y][i[0] - self.heat_map_interval_pixel - self.robot_radius_pixel + x] == 100:
                                         is_point_available = False
+                        if is_point_available:
+                            for j in self.available_measurement_points:
+                                if j[0] - 10 <= int(i[0] - self.heat_map_interval_pixel - true_origin_point[0]) <= j[0] + 10 and j[1] - 10 <= int(i[1] - true_origin_point[1]) <= j[1] + 10:
+                                    is_point_available = False
                     if is_point_available:
-                        self.available_measurement_points.append([i[0] - self.heat_map_interval_pixel, i[1]])
+                        self.available_measurement_points.append([int(i[0] - self.heat_map_interval_pixel - true_origin_point[0]), int(i[1] - true_origin_point[1])])
                         self.raw_grid_map_data_2d[0][i[1]][i[0] - self.heat_map_interval_pixel] = 1
 
                 # 右
@@ -172,17 +186,22 @@ class HeatMapCreator:
                 ):
                     explore_results.append([i[0] + self.heat_map_interval_pixel, i[1]])
                     self.raw_grid_map_data_2d[1][i[1]][i[0] + self.heat_map_interval_pixel] = 1
-                    is_point_available = False
-                    if self.raw_grid_map_data_2d[0][i[1]][i[0] + self.heat_map_interval_pixel] == 0:
-                        is_point_available = True
+                    is_point_available = True
+                    if not self.raw_grid_map_data_2d[0][i[1]][i[0] + self.heat_map_interval_pixel] == 0:
+                        is_point_available = False
+                    else:
                         for y in range(self.robot_radius_pixel * 2):
                             for x in range(self.robot_radius_pixel * 2):
                                 if ((-self.robot_radius_pixel + x) ** 2 + (
                                         -self.robot_radius_pixel + y) ** 2) ** 0.5 <= self.robot_radius_pixel:
                                     if self.raw_grid_map_data_2d[0][i[1] - self.robot_radius_pixel + y][i[0] + self.heat_map_interval_pixel - self.robot_radius_pixel + x] == 100:
                                         is_point_available = False
+                        if is_point_available:
+                            for j in self.available_measurement_points:
+                                if j[0] - 10 <= int(i[0] + self.heat_map_interval_pixel - true_origin_point[0]) <= j[0] + 10 and j[1] - 10 <= int(i[1] - true_origin_point[1]) <= j[1] + 10:
+                                    is_point_available = False
                     if is_point_available:
-                        self.available_measurement_points.append([i[0] + self.heat_map_interval_pixel, i[1]])
+                        self.available_measurement_points.append([int(i[0] + self.heat_map_interval_pixel - true_origin_point[0]), int(i[1] - true_origin_point[1])])
                         self.raw_grid_map_data_2d[0][i[1]][i[0] + self.heat_map_interval_pixel] = 1
 
             explore_origin_points = explore_results

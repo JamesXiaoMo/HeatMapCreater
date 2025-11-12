@@ -1,6 +1,14 @@
 import numpy as np
 
 
+def value_to_color(brightness: float):
+    value = np.clip(brightness, 0.0, 1.0)
+    r = int(255 * value)
+    g = 0
+    b = int(255 * (1 - value))
+    return [b, g, r]
+
+
 class HeatMapCreator:
     """
     由ROS2发布的/map话题数据生成热力图
@@ -35,7 +43,7 @@ class HeatMapCreator:
         self.available_measurement_points = []  # 实际可用测量点坐标 [pixel]
         self.available_measurement_points_world = []  # 世界坐标系中实际可用测量点坐标 [m]
 
-    def callback(
+    def map_callback(
             self,
             raw_grid_map_data: list,
             raw_grid_map_width_pixel: int,
@@ -200,4 +208,42 @@ class HeatMapCreator:
                 (n[0] - true_origin_point[0]) * self.raw_grid_map_resolution,
                 -(n[1] - true_origin_point[1]) * self.raw_grid_map_resolution
             ])
-        print(self.available_measurement_points_world)
+        print(f'{len(self.available_measurement_points_world)}个测量点\n{self.available_measurement_points_world}')
+
+    def heatmap_callback(self):
+        img = np.ones(
+            (self.raw_grid_map_height_pixel, self.raw_grid_map_width_pixel, 3),
+            dtype=np.uint8
+        ) * 150
+
+        for y_positive in range(int((self.raw_grid_map_height_pixel - 1 - -self.raw_grid_map_origin_y_pixel) / self.heat_map_interval_pixel) + 1):
+            y = int(self.raw_grid_map_height_pixel - 1 - -self.raw_grid_map_origin_y_pixel - y_positive * self.heat_map_interval_pixel)
+            img[y, :] = [0, 0, 0]
+
+        for y_negative in range(int((self.raw_grid_map_height_pixel - (self.raw_grid_map_height_pixel - 1 - -self.raw_grid_map_origin_y_pixel)) / self.heat_map_interval_pixel) + 1):
+            y = int(self.raw_grid_map_height_pixel - 1 - -self.raw_grid_map_origin_y_pixel + y_negative * self.heat_map_interval_pixel)
+            img[y, :] = [0, 0, 0]
+
+        for x_positive in range(int((self.raw_grid_map_width_pixel - -self.raw_grid_map_origin_x_pixel) / self.heat_map_interval_pixel) + 1):
+            x = int(-self.raw_grid_map_origin_x_pixel + x_positive * self.heat_map_interval_pixel)
+            img[:, x] = [0, 0, 0]
+
+        for x_negative in range(int(-self.raw_grid_map_origin_x_pixel / self.heat_map_interval_pixel) + 1):
+            x = int(-self.raw_grid_map_origin_x_pixel - x_negative * self.heat_map_interval_pixel)
+            img[:, x] = [0, 0, 0]
+
+        index = 0
+        for i in range(self.raw_grid_map_height_pixel):
+            for j in range(self.raw_grid_map_width_pixel):
+                if self.raw_grid_map_data_2d[0][self.raw_grid_map_height_pixel - 1 - i][j] > 1:
+                    img[-i, j] = [0, 0, 0]
+                index += 1
+
+        origin_x = -self.raw_grid_map_origin_x_pixel
+        origin_y = self.raw_grid_map_height_pixel - 1 - -self.raw_grid_map_origin_y_pixel
+        img[origin_y - 1:origin_y + 2, origin_x - 1:origin_x + 2] = [0, 0, 255]
+
+        for i in self.available_measurement_points:
+            img[i[1] - 1:i[1] + 2, i[0] - 1:i[0] + 2] = [255, 0, 0]
+        return img
+

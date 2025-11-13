@@ -1,12 +1,26 @@
 import numpy as np
 
 
-def value_to_color(brightness: float):
-    value = np.clip(brightness, 0.0, 1.0)
-    r = int(255 * value)
-    g = 0
-    b = int(255 * (1 - value))
-    return [b, g, r]
+def value_to_color(val):
+    """
+    val: 0~1
+    return: [B,G,R] (0~255)
+    """
+    val = np.clip(val, 0.0, 1.0)
+    b, g, r = 0, 0, 0
+    if val <= 0.33:
+        b = 255 * ((0.33 - val) / 0.33)
+        g = 255 * (val / 0.33)
+        r = 0
+    elif 0.33 < val <= 0.66:
+        b = 0
+        g = 255
+        r = 255 * ((val - 0.33) / 0.33)
+    else:
+        b = 0
+        g = 255 * ((1.0 - val) / 0.33)
+        r = 255
+    return [b, g, r]  # OpenCV/ROS 用 BGR 顺序
 
 
 class HeatMapCreator:
@@ -14,7 +28,7 @@ class HeatMapCreator:
     由ROS2发布的/map话题数据生成热力图
     """
 
-    def __init__(self, heat_map_interval: int):
+    def __init__(self, heat_map_interval: float):
         self.raw_grid_map_width_pixel = 0  # 原始地图的宽度 [pixel]
         self.raw_grid_map_height_pixel = 0  # 原始地图的高度 [pixel]
         self.raw_grid_map_width = 0  # 原始地图的宽度 [m]
@@ -211,26 +225,79 @@ class HeatMapCreator:
         print(f'{len(self.available_measurement_points_world)}个测量点\n{self.available_measurement_points_world}')
 
     def heatmap_callback(self):
+        """
+        生成亮度热力图
+        :return:
+        """
         img = np.ones(
             (self.raw_grid_map_height_pixel, self.raw_grid_map_width_pixel, 3),
             dtype=np.uint8
         ) * 150
 
+        # debug:创造假亮度数据
+        for i in self.available_measurement_points:
+            i.append(np.random.randint(0, 100) * 0.01)
+
+        brightness = []
+        for i in self.available_measurement_points:
+            brightness.append(i[2])
+
+        # 生成热力图
+        # origin_x = -self.raw_grid_map_origin_x_pixel
+        # origin_y = self.raw_grid_map_height_pixel - 1 - -self.raw_grid_map_origin_y_pixel
+        # img[origin_y + 1:origin_y + self.heat_map_interval_pixel, origin_x + 1:origin_x + self.heat_map_interval_pixel] = value_to_color(0.9)
+
+        for i in self.available_measurement_points:
+            brightness_1 = [i[2]]
+            brightness_2 = [i[2]]
+            brightness_3 = [i[2]]
+            brightness_4 = [i[2]]
+            for j in self.available_measurement_points:
+                if i[0] + self.heat_map_interval_pixel - 3 <= j[0] <= i[0] + self.heat_map_interval_pixel + 3 and i[1] - 3 <= j[0] <= i[1] + 3:
+                    brightness_1.append(j[2])
+                    brightness_4.append(j[2])
+                elif i[0] + self.heat_map_interval_pixel - 3 <= j[0] <= i[0] + self.heat_map_interval_pixel + 3 and i[1] - self.heat_map_interval_pixel - 3 <= j[1] <= i[1] - self.heat_map_interval_pixel + 3:
+                    brightness_1.append(j[2])
+                elif i[0] - 3 <= j[0] <= i[0] + 3 and i[1] - self.heat_map_interval_pixel - 3 <= j[0] <= i[1] - self.heat_map_interval_pixel + 3:
+                    brightness_1.append(j[2])
+                    brightness_2.append(j[2])
+                elif i[0] - self.heat_map_interval_pixel - 3 <= j[0] <= i[0] - self.heat_map_interval_pixel + 3 and i[1] - self.heat_map_interval_pixel - 3 <= j[1] <= i[1] - self.heat_map_interval_pixel + 3:
+                    brightness_2.append(j[2])
+                elif i[0] - self.heat_map_interval_pixel - 3 <= j[0] <= i[0] - self.heat_map_interval_pixel + 3 and i[1] - 3 <= j[1] <= i[1] + 3:
+                    brightness_2.append(j[2])
+                    brightness_3.append(j[2])
+                elif i[0] - self.heat_map_interval_pixel - 3 <= j[0] <= i[0] - self.heat_map_interval_pixel + 3 and i[1] + self.heat_map_interval_pixel - 3 <= j[1] <= i[1] + self.heat_map_interval_pixel + 3:
+                    brightness_3.append(j[2])
+                elif i[0] - 3 <= j[0] <= i[0] + 3 and i[1] + self.heat_map_interval_pixel - 3 <= j[0] <= i[1] + self.heat_map_interval_pixel + 3:
+                    brightness_3.append(j[2])
+                    brightness_4.append(j[2])
+                elif i[0] + self.heat_map_interval_pixel - 3 <= j[0] <= i[0] + self.heat_map_interval_pixel + 3 and i[1] + self.heat_map_interval_pixel - 3 <= j[1] <= i[1] + self.heat_map_interval_pixel + 3:
+                    brightness_4.append(j[2])
+            value_1 = ((sum(brightness_1) / len(brightness_1)) - min(brightness))/(max(brightness) - min(brightness))
+            img[i[1] - self.heat_map_interval_pixel:i[1], i[0] + 1:i[0] + self.heat_map_interval_pixel] = value_to_color(value_1)
+            value_2 = ((sum(brightness_2) / len(brightness_2)) - min(brightness)) / (max(brightness) - min(brightness))
+            img[i[1] - self.heat_map_interval_pixel:i[1], i[0] - self.heat_map_interval_pixel:i[0]] = value_to_color(value_2)
+            value_3 = ((sum(brightness_3) / len(brightness_3)) - min(brightness)) / (max(brightness) - min(brightness))
+            img[i[1] + 1:i[1] + self.heat_map_interval_pixel, i[0] - self.heat_map_interval_pixel:i[0]] = value_to_color(value_3)
+            value_4 = ((sum(brightness_4) / len(brightness_4)) - min(brightness)) / (max(brightness) - min(brightness))
+            img[i[1] + 1:i[1] + self.heat_map_interval_pixel, i[0] + 1:i[0] + self.heat_map_interval_pixel] = value_to_color(value_4)
+
+        # 生成网格线
         for y_positive in range(int((self.raw_grid_map_height_pixel - 1 - -self.raw_grid_map_origin_y_pixel) / self.heat_map_interval_pixel) + 1):
             y = int(self.raw_grid_map_height_pixel - 1 - -self.raw_grid_map_origin_y_pixel - y_positive * self.heat_map_interval_pixel)
-            img[y, :] = [0, 0, 0]
+            img[y, :] = [50, 50, 50]
 
         for y_negative in range(int((self.raw_grid_map_height_pixel - (self.raw_grid_map_height_pixel - 1 - -self.raw_grid_map_origin_y_pixel)) / self.heat_map_interval_pixel) + 1):
             y = int(self.raw_grid_map_height_pixel - 1 - -self.raw_grid_map_origin_y_pixel + y_negative * self.heat_map_interval_pixel)
-            img[y, :] = [0, 0, 0]
+            img[y, :] = [50, 50, 50]
 
         for x_positive in range(int((self.raw_grid_map_width_pixel - -self.raw_grid_map_origin_x_pixel) / self.heat_map_interval_pixel) + 1):
             x = int(-self.raw_grid_map_origin_x_pixel + x_positive * self.heat_map_interval_pixel)
-            img[:, x] = [0, 0, 0]
+            img[:, x] = [50, 50, 50]
 
         for x_negative in range(int(-self.raw_grid_map_origin_x_pixel / self.heat_map_interval_pixel) + 1):
             x = int(-self.raw_grid_map_origin_x_pixel - x_negative * self.heat_map_interval_pixel)
-            img[:, x] = [0, 0, 0]
+            img[:, x] = [50, 50, 50]
 
         index = 0
         for i in range(self.raw_grid_map_height_pixel):
@@ -239,10 +306,12 @@ class HeatMapCreator:
                     img[-i, j] = [0, 0, 0]
                 index += 1
 
+        # 生成原点坐标
         origin_x = -self.raw_grid_map_origin_x_pixel
         origin_y = self.raw_grid_map_height_pixel - 1 - -self.raw_grid_map_origin_y_pixel
         img[origin_y - 1:origin_y + 2, origin_x - 1:origin_x + 2] = [0, 0, 255]
 
+        # 生成测量点坐标
         for i in self.available_measurement_points:
             img[i[1] - 1:i[1] + 2, i[0] - 1:i[0] + 2] = [255, 0, 0]
         return img
